@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -7,7 +6,7 @@
   <title>Absen Digital</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: Arial;
       background: #f4f6f8;
       display: flex;
       justify-content: center;
@@ -17,17 +16,19 @@
     .box {
       background: white;
       padding: 20px;
+      width: 320px;
       border-radius: 10px;
-      width: 100%;
-      max-width: 320px;
       box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-      text-align: center;
     }
     input, button {
       width: 100%;
       padding: 10px;
       margin-top: 10px;
-      font-size: 16px;
+    }
+    video, canvas {
+      width: 100%;
+      margin-top: 10px;
+      border-radius: 8px;
     }
     button {
       background: #2563eb;
@@ -39,34 +40,62 @@
 </head>
 <body>
 
-  <div class="box">
-    <h2>Absen Digital</h2>
-    <input type="text" id="nama" placeholder="Masukkan Nama">
-    <button onclick="submitAbsen()">Absen</button>
-  </div>
+<div class="box">
+  <h3>Absen Digital</h3>
 
-  <!-- SCRIPT NORMAL (TOMBOL) -->
-  <script>
-    function submitAbsen() {
-      alert("TOMBOL TERKLIK"); // TEST (boleh dihapus nanti)
+  <input id="nama" placeholder="Nama">
+  <input id="pekerjaan" placeholder="Pekerjaan">
 
-      const nama = document.getElementById("nama").value;
-      if (nama === "") {
-        alert("Nama wajib diisi");
-        return;
-      }
+  <video id="video" autoplay></video>
+  <canvas id="canvas" style="display:none;"></canvas>
 
-      kirimAbsen(nama);
-    }
-  </script>
+  <button onclick="ambilFoto()">Ambil Foto</button>
+  <button onclick="submitAbsen()">Absen</button>
+</div>
 
-  <!-- SCRIPT FIREBASE (WAJIB TERPISAH) -->
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!-- SCRIPT UI -->
+<script>
+let fotoBlob = null;
 
-    // 🔥 GANTI SEMUA ISI DI BAWAH INI DENGAN PUNYA KAMU 🔥
-    const firebaseConfig = {
+async function startCamera() {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  document.getElementById("video").srcObject = stream;
+}
+startCamera();
+
+function ambilFoto() {
+  const video = document.getElementById("video");
+  const canvas = document.getElementById("canvas");
+  canvas.height = video.videoHeight;
+  canvas.width = video.videoWidth;
+  canvas.getContext("2d").drawImage(video, 0, 0);
+
+  canvas.toBlob(blob => {
+    fotoBlob = blob;
+    alert("Foto siap 📸");
+  });
+}
+
+function submitAbsen() {
+  const nama = namaInput.value;
+  const pekerjaan = pekerjaanInput.value;
+
+  if (!nama || !pekerjaan || !fotoBlob) {
+    alert("Lengkapi data & foto");
+    return;
+  }
+  kirimAbsen(nama, pekerjaan, fotoBlob);
+}
+</script>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
+
+/* 🔥 GANTI INI SAJA 🔥 */
+const firebaseConfig = {
   apiKey: "AIzaSyCEXAIyv9fmgz4jGJq36FrE4GuXyZ2DjyE",
   authDomain: "absen-online-d94b2.firebaseapp.com",
   projectId: "absen-online-d94b2",
@@ -75,23 +104,32 @@
   appId: "1:640002598760:web:fe0b388e74f45422a9d8dd",
   measurementId: "G-C0NM7N6L88"
 };
-    // 🔥 SAMPAI SINI SAJA YANG DIGANTI 🔥
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+/* 🔥 SAMPAI SINI 🔥 */
 
-    window.kirimAbsen = async function (nama) {
-      try {
-        await addDoc(collection(db, "absen"), {
-          nama: nama,
-          waktu: new Date()
-        });
-        alert("ABSEN MASUK FIREBASE ✅");
-      } catch (e) {
-        alert("ERROR: " + e.message);
-      }
-    };
-  </script>
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+window.kirimAbsen = async function(nama, pekerjaan, fotoBlob) {
+  try {
+    const fotoRef = ref(storage, `absen/${Date.now()}.jpg`);
+    await uploadBytes(fotoRef, fotoBlob);
+    const fotoUrl = await getDownloadURL(fotoRef);
+
+    await addDoc(collection(db, "absen"), {
+      nama,
+      pekerjaan,
+      fotoUrl,
+      waktu: new Date()
+    });
+
+    alert("ABSEN + FOTO BERHASIL ✅");
+  } catch (e) {
+    alert("ERROR: " + e.message);
+  }
+};
+</script>
 
 </body>
 </html>
