@@ -67,8 +67,6 @@
 <div class="card">
   <h2>Absen Digital</h2>
 
-  <input type="text" id="nama" placeholder="Masukkan Nama">
-
   <button onclick="bukaKamera()">📷 Buka Kamera</button>
 
   <video id="video" autoplay playsinline></video>
@@ -76,13 +74,13 @@
 
   <canvas id="canvas" style="display:none;"></canvas>
   <img id="preview">
-
-  <button onclick="absen()">Absen Sekarang</button>
+  <input type="text" id="nama" placeholder="Nama">
+<button onclick="submitAbsen()">Absen</button>
 
   <ul id="riwayat"></ul>
 </div>
 <script>
-function submitAbsen() {
+  function submitAbsen() {
   const nama = document.getElementById("nama").value;
   if (nama === "") {
     alert("Nama wajib diisi");
@@ -90,8 +88,6 @@ function submitAbsen() {
   }
   kirimAbsen(nama);
 }
-</script>
-<script>
 let stream = null;
 
 function bukaKamera() {
@@ -172,36 +168,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 const analytics = getAnalytics(app);
-</script>
-  <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyCEXAIyv9fmgz4jGJq36FrE4GuXyZ2DjyE",
-  authDomain: "absen-online-d94b2.firebaseapp.com",
-  projectId: "absen-online-d94b2",
-  storageBucket: "absen-online-d94b2.firebasestorage.app",
-  messagingSenderId: "640002598760",
-  appId: "1:640002598760:web:1b7f17a029103b0aa9d8dd",
-  measurementId: "G-2KHL5ZKNCG"
-};
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  window.kirimAbsen = async function (nama) {
-    try {
-      await addDoc(collection(db, "absen"), {
-        nama: nama,
-        waktu: new Date()
-      });
-      alert("DATA MASUK FIREBASE ✅");
-    } catch (e) {
-      alert("ERROR: " + e.message);
-    }
-  };
 </script>
 </body>
 </html>
