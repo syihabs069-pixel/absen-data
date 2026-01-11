@@ -1,42 +1,42 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Absen Digital</title>
-  <style>
-    body {
-      font-family: Arial;
-      background: #f4f6f8;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
-    .box {
-      background: white;
-      padding: 20px;
-      width: 320px;
-      border-radius: 10px;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-    input, button {
-      width: 100%;
-      padding: 10px;
-      margin-top: 10px;
-    }
-    video, canvas {
-      width: 100%;
-      margin-top: 10px;
-      border-radius: 8px;
-    }
-    button {
-      background: #2563eb;
-      color: white;
-      border: none;
-      border-radius: 6px;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Absen Digital</title>
+<style>
+body {
+  font-family: Arial;
+  background: #f4f6f8;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.box {
+  background: white;
+  padding: 20px;
+  width: 320px;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+}
+input, button {
+  width: 100%;
+  padding: 10px;
+  margin-top: 10px;
+}
+video {
+  width: 100%;
+  margin-top: 10px;
+  border-radius: 8px;
+}
+button {
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 6px;
+}
+</style>
 </head>
 <body>
 
@@ -58,16 +58,20 @@
 let fotoBlob = null;
 
 async function startCamera() {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-  document.getElementById("video").srcObject = stream;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    document.getElementById("video").srcObject = stream;
+  } catch (e) {
+    alert("Kamera ditolak ❌");
+  }
 }
 startCamera();
 
 function ambilFoto() {
   const video = document.getElementById("video");
   const canvas = document.getElementById("canvas");
-  canvas.height = video.videoHeight;
   canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
   canvas.getContext("2d").drawImage(video, 0, 0);
 
   canvas.toBlob(blob => {
@@ -77,13 +81,14 @@ function ambilFoto() {
 }
 
 function submitAbsen() {
-  const nama = namaInput.value;
-  const pekerjaan = pekerjaanInput.value;
+  const nama = document.getElementById("nama").value;
+  const pekerjaan = document.getElementById("pekerjaan").value;
 
   if (!nama || !pekerjaan || !fotoBlob) {
-    alert("Lengkapi data & foto");
+    alert("Lengkapi nama, pekerjaan, dan foto");
     return;
   }
+
   kirimAbsen(nama, pekerjaan, fotoBlob);
 }
 </script>
@@ -94,7 +99,7 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebas
 import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js";
 
-/* 🔥 GANTI INI SAJA 🔥 */
+,* 🔥 GANTI INI SAJA 🔥 */
 const firebaseConfig = {
   apiKey: "AIzaSyCEXAIyv9fmgz4jGJq36FrE4GuXyZ2DjyE",
   authDomain: "absen-online-d94b2.firebaseapp.com",
@@ -105,7 +110,6 @@ const firebaseConfig = {
   measurementId: "G-C0NM7N6L88"
 };
 
-/* 🔥 SAMPAI SINI 🔥 */
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
@@ -113,7 +117,7 @@ const storage = getStorage(app);
 
 window.kirimAbsen = async function(nama, pekerjaan, fotoBlob) {
   try {
-    const fotoRef = ref(storage, `absen/${Date.now()}.jpg`);
+    const fotoRef = ref(storage, "absen/" + Date.now() + ".jpg");
     await uploadBytes(fotoRef, fotoBlob);
     const fotoUrl = await getDownloadURL(fotoRef);
 
