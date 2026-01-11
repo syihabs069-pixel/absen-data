@@ -1,173 +1,96 @@
+
 <!DOCTYPE html>
 <html lang="id">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Absen Digital Kamera</title>
-
+  <title>Absen Digital</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg,#4facfe,#00f2fe);
-      min-height: 100vh;
+      background: #f4f6f8;
       display: flex;
       justify-content: center;
       align-items: center;
-      margin: 0;
+      height: 100vh;
     }
-    .card {
+    .box {
       background: white;
-      width: 90%;
-      max-width: 360px;
       padding: 20px;
-      border-radius: 15px;
+      border-radius: 10px;
+      width: 100%;
+      max-width: 320px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
       text-align: center;
     }
     input, button {
       width: 100%;
       padding: 10px;
-      margin: 8px 0;
+      margin-top: 10px;
+      font-size: 16px;
     }
     button {
-      border: none;
-      border-radius: 8px;
-      background: #4facfe;
+      background: #2563eb;
       color: white;
-    }
-    video {
-      width: 100%;
-      border-radius: 12px;
-      display: none;
-    }
-    #preview {
-      width: 120px;
-      height: 120px;
-      border-radius: 50%;
-      object-fit: cover;
-      margin: 10px auto;
-      display: none;
-      border: 3px solid #4facfe;
-    }
-    ul {
-      list-style: none;
-      padding: 0;
-    }
-    li {
-      background: #f2f2f2;
-      margin: 5px 0;
-      padding: 6px;
+      border: none;
       border-radius: 6px;
-      font-size: 13px;
     }
   </style>
 </head>
-
 <body>
 
-<div class="card">
-  <h2>Absen Digital</h2>
+  <div class="box">
+    <h2>Absen Digital</h2>
+    <input type="text" id="nama" placeholder="Masukkan Nama">
+    <button onclick="submitAbsen()">Absen</button>
+  </div>
 
-  <button onclick="bukaKamera()">📷 Buka Kamera</button>
+  <!-- SCRIPT NORMAL (TOMBOL) -->
+  <script>
+    function submitAbsen() {
+      alert("TOMBOL TERKLIK"); // TEST (boleh dihapus nanti)
 
-  <video id="video" autoplay playsinline></video>
-  <button onclick="ambilFoto()">📸 Ambil Foto</button>
+      const nama = document.getElementById("nama").value;
+      if (nama === "") {
+        alert("Nama wajib diisi");
+        return;
+      }
 
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview">
-  <input type="text" id="nama" placeholder="Nama">
-<button onclick="submitAbsen()">Absen</button>
+      kirimAbsen(nama);
+    }
+  </script>
 
-  <ul id="riwayat"></ul>
-</div>
-<script>
-  function submitAbsen() {
-  const nama = document.getElementById("nama").value;
-  if (nama === "") {
-    alert("Nama wajib diisi");
-    return;
-  }
-  kirimAbsen(nama);
-}
-let stream = null;
+  <!-- SCRIPT FIREBASE (WAJIB TERPISAH) -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-function bukaKamera() {
-  navigator.mediaDevices.getUserMedia({ video: true })
-    .then(s => {
-      stream = s;
-      const video = document.getElementById("video");
-      video.srcObject = stream;
-      video.style.display = "block";
-    })
-    .catch(() => alert("Izin kamera ditolak"));
-}
+    // 🔥 GANTI SEMUA ISI DI BAWAH INI DENGAN PUNYA KAMU 🔥
+    const firebaseConfig = {
+      apiKey: "ISI_API_KEY_KAMU",
+      authDomain: "ISI_AUTH_DOMAIN",
+      projectId: "ISI_PROJECT_ID",
+      storageBucket: "ISI_STORAGE_BUCKET",
+      messagingSenderId: "ISI_MESSAGING_ID",
+      appId: "ISI_APP_ID"
+    };
+    // 🔥 SAMPAI SINI SAJA YANG DIGANTI 🔥
 
-function ambilFoto() {
-  const video = document.getElementById("video");
-  const canvas = document.getElementById("canvas");
-  const preview = document.getElementById("preview");
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
 
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
-  canvas.getContext("2d").drawImage(video, 0, 0);
+    window.kirimAbsen = async function (nama) {
+      try {
+        await addDoc(collection(db, "absen"), {
+          nama: nama,
+          waktu: new Date()
+        });
+        alert("ABSEN MASUK FIREBASE ✅");
+      } catch (e) {
+        alert("ERROR: " + e.message);
+      }
+    };
+  </script>
 
-  preview.src = canvas.toDataURL("image/png");
-  preview.style.display = "block";
-
-  stream.getTracks().forEach(track => track.stop());
-  video.style.display = "none";
-}
-
-function absen() {
-  const nama = document.getElementById("nama").value;
-  const foto = document.getElementById("preview").src;
-  if (!nama || !foto) {
-    alert("Nama & foto wajib");
-    return;
-  }
-
-  const waktu = new Date().toLocaleString();
-  const data = nama + " - " + waktu;
-
-  let riwayat = JSON.parse(localStorage.getItem("absen")) || [];
-  riwayat.push(data);
-  localStorage.setItem("absen", JSON.stringify(riwayat));
-
-  tampilRiwayat();
-}
-
-function tampilRiwayat() {
-  const ul = document.getElementById("riwayat");
-  ul.innerHTML = "";
-  const data = JSON.parse(localStorage.getItem("absen")) || [];
-  data.forEach(d => {
-    const li = document.createElement("li");
-    li.innerText = d;
-    ul.appendChild(li);
-  });
-}
-</script>
-<script>
-  // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-import { getAnalytics } from "firebase/analytics";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-// For Firebase JS SDK v7.20.0 and later, measurementId is optional
-const firebaseConfig = {
-  apiKey: "AIzaSyCEXAIyv9fmgz4jGJq36FrE4GuXyZ2DjyE",
-  authDomain: "absen-online-d94b2.firebaseapp.com",
-  projectId: "absen-online-d94b2",
-  storageBucket: "absen-online-d94b2.firebasestorage.app",
-  messagingSenderId: "640002598760",
-  appId: "1:640002598760:web:1b7f17a029103b0aa9d8dd",
-  measurementId: "G-2KHL5ZKNCG"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const analytics = getAnalytics(app);
-</script>
 </body>
 </html>
